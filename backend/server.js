@@ -22,9 +22,9 @@ app.use(express.json());
 
 //--->multer config for handling CSV file
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir), // Save in "uploads" folder
+  destination: (req, file, cb) => cb(null, uploadDir), 
   filename: (req, file, cb) =>
-    cb(null, Date.now() + path.extname(file.originalname)), // Unique name with timestamp
+    cb(null, Date.now() + path.extname(file.originalname)), 
 });
 
 const upload = multer({
