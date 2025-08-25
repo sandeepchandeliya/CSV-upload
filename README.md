@@ -25,13 +25,13 @@ csv-upload-dashboard/
 │ │ └── fileController.js # Handles CSV logic
 │ ├── routes/
 │ │ └── fileRoutes.js # API routes
-│ ├── models/
-│ │ └── fileModel.js # Placeholder for DB integration
 │ ├── uploads/ # Uploaded CSV files
-│ └── server.js # Main Express server
+│ │ 
+│ ├── server.js # Main Express server
+│ 
 │
 │── frontend/
-│ └── index.html # Frontend dashboard (Vanilla JS)
+│ └── index.html 
 │
 └── README.md
 
