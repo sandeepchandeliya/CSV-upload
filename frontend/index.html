@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CSV Dashboard</title>
+    <style>
+      /* styles for clean layout */
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #f4f6f9;
+      }
+      h2 {
+        text-align: center;
+      }
+      .upload-section {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .files-list {
+        margin: 15px 0;
+        list-style: none;
+        padding: 0;
+      }
+      .files-list li {
+        margin: 5px 0;
+      }
+      .files-list a {
+        text-decoration: none;
+        color: #007bff;
+      }
+      .files-list a:hover {
+        text-decoration: underline;
+      }
+      .table-container {
+        overflow-x: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 600px;
+      }
+      th,
+      td {
+        padding: 10px 14px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background: linear-gradient(90deg, #007bff, #3399ff);
+        color: white;
+        position: sticky;
+        top: 0;
+        cursor: pointer;
+      }
+      tr:nth-child(even) {
+        background: #f9f9f9;
+      }
+      tr:hover {
+        background: #eef6ff;
+      }
+      .pagination {
+        margin: 15px 0;
+        text-align: center;
+      }
+      .pagination button {
+        padding: 6px 12px;
+        margin: 0 3px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        background: #f8f9fa;
+      }
+      .pagination button.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+      }
+      .pagination button:hover {
+        background: #e2e6ea;
+      }
+      .search-box {
+        text-align: center;
+        margin: 15px 0;
+      }
+      .search-box input {
+        padding: 8px;
+        width: 50%;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>📊 CSV Upload File</h2>
+
+    <!-- file upload -->
+    <div class="upload-section">
+      <input type="file" id="fileInput" />
+      <button onclick="uploadFile()">Upload</button>
+    </div>
+
+    <!-- uploaded files -->
+    <div>
+      <h3>Uploaded Files</h3>
+      <ul id="filesList" class="files-list"></ul>
+    </div>
+
+    <!-- search bar -->
+    <div class="search-box">
+      <input
+        type="text"
+        id="searchBox"
+        placeholder="Search in table..."
+        onkeyup="searchTable()"
+      />
+    </div>
+
+    <!-- dynamic table -->
+    <div id="table"></div>
+
+    <!-- pagination-->
+    <div class="pagination" id="pagination"></div>
+
+    <script>
+      //---> global state
+      let csvData = [];
+      let filteredData = [];
+      let currentPage = 1;
+      const rowsPerPage = 10;
+      let currentSort = { key: null, asc: true };
+
+      //--> fetch uploaded file list
+      async function fetchFiles() {
+        const res = await fetch('http://localhost:3000/api/files');
+        const files = await res.json();
+        const list = document.getElementById('filesList');
+        list.innerHTML = '';
+        files.forEach((file) => {
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="#" onclick="fetchCSV('${file}')">${file}</a>`;
+          list.appendChild(li);
+        });
+      }
+
+      //---> upload a new file
+      async function uploadFile() {
+        const input = document.getElementById('fileInput');
+        if (!input.files.length) return alert('Please select a CSV file.');
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        await fetch('http://localhost:3000/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        fetchFiles();
+      }
+
+      //-->fetch CSV content
+      async function fetchCSV(filename) {
+        const res = await fetch(`http://localhost:3000/api/files/${filename}`);
+        csvData = await res.json();
+        filteredData = [...csvData];
+        currentPage = 1;
+        renderTable();
+      }
+
+      //---> search row
+      function searchTable() {
+        const query = document.getElementById('searchBox').value.toLowerCase();
+        filteredData = csvData.filter((row) =>
+          Object.values(row).some((val) =>
+            String(val).toLowerCase().includes(query)
+          )
+        );
+        currentPage = 1;
+        renderTable();
+      }
+
+      //---> this will render dynamic table with pagination and sorting
+      function renderTable() {
+        if (!filteredData.length) {
+          document.getElementById('table').innerHTML =
+            '<p>No results found</p>';
+          document.getElementById('pagination').innerHTML = '';
+          return;
+        }
+
+        const keys = Object.keys(filteredData[0]);
+
+        if (currentSort.key) {
+          filteredData.sort((a, b) => {
+            if (a[currentSort.key] < b[currentSort.key])
+              return currentSort.asc ? -1 : 1;
+            if (a[currentSort.key] > b[currentSort.key])
+              return currentSort.asc ? 1 : -1;
+            return 0;
+          });
+        }
+
+        const start = (currentPage - 1) * rowsPerPage;
+        const paginatedData = filteredData.slice(start, start + rowsPerPage);
+
+        let html = `<div class="table-container"><table><thead><tr>`;
+        keys.forEach((k) => {
+          let arrow =
+            currentSort.key === k ? (currentSort.asc ? ' ▲' : ' ▼') : '';
+          html += `<th onclick="sortTable('${k}')">${k}${arrow}</th>`;
+        });
+        html += '</tr></thead><tbody>';
+
+        paginatedData.forEach((row) => {
+          html += '<tr>';
+          keys.forEach((k) => (html += `<td>${row[k]}</td>`));
+          html += '</tr>';
+        });
+        html += '</tbody></table></div>';
+
+        document.getElementById('table').innerHTML = html;
+        renderPagination();
+      }
+
+      function sortTable(key) {
+        if (currentSort.key === key) {
+          currentSort.asc = !currentSort.asc;
+        } else {
+          currentSort.key = key;
+          currentSort.asc = true;
+        }
+        renderTable();
+      }
+
+      function renderPagination() {
+        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+        let buttons = '';
+
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+        if (startPage > 1)
+          buttons += `<button onclick="goToPage(1)">1</button> ... `;
+
+        for (let i = startPage; i <= endPage; i++) {
+          buttons += `<button onclick="goToPage(${i})" class="${
+            i === currentPage ? 'active' : ''
+          }">${i}</button>`;
+        }
+
+        if (endPage < totalPages)
+          buttons += ` ... <button onclick="goToPage(${totalPages})">${totalPages}</button>`;
+
+        document.getElementById('pagination').innerHTML = buttons;
+      }
+
+      function goToPage(page) {
+        currentPage = page;
+        renderTable();
+      }
+
+      //--> this load files on page load
+      fetchFiles();
+    </script>
+  </body>
+</html>
