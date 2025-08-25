@@ -48,5 +48,5 @@ app.use('/api', fileRoutes(uploadDir, upload));
 
 //--->starting the server
 app.listen(PORT, () => {
-  `Server running on http://localhost:${PORT}`;
+  console.log(`Server running on http://localhost:${PORT}`)
 });
