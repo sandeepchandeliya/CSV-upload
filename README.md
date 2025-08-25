@@ -12,7 +12,7 @@ The app allows uploading CSVs, listing them, viewing data in a dynamic table wit
 - ✅ Search in table (filters rows in real-time on frontend)  
 - ✅ Sort columns (ascending/descending toggle)  
 - ✅ Pagination (10 rows per page)  
-- ⚡ Scalable backend folder structure (controllers, routes, models)  
+- ⚡ Scalable backend folder structure (controllers, routes)  
 - 🔒 Multer for file handling & validation  
 
 ---
