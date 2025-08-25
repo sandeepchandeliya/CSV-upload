@@ -1,1 +1,6 @@
+[build]
+root = "backend"
+
+[deploy]
+start = "node server.js"
 
